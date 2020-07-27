@@ -53,6 +53,9 @@ def alias_function(fun, name, doc=None):
     """
     Copy a function
     """
+    log.debug("Beginning of alias_function() execution... utils/functools.py")
+    log.debug("Calling types.FunctionType()... utils/functools.py")
+    log.debug("Dynamically generating alias of function passed as fun arg... utils/functools.py")
     alias_fun = types.FunctionType(
         fun.__code__,
         fun.__globals__,

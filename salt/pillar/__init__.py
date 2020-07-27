@@ -117,14 +117,19 @@ def get_async_pillar(
     """
     Return the correct pillar driver based on the file_client option
     """
+    log.debug("Beginning of get_async_pillar() execution... pillar/__init__.py")
+    log.debug("Loading file_client... pillar/__init__.py")
     file_client = opts["file_client"]
     if opts.get("master_type") == "disable" and file_client == "remote":
+        log.debug("master_type is disable and file_client is remote... assigning local to file_client... pillar/__init__.py")
         file_client = "local"
     elif file_client == "local" and opts.get("use_master_when_local"):
+        log.debug("file_client is local and user_master_when_local is True... assigning remote to file_client... pillar/__init__.py")
         file_client = "remote"
     ptype = {"remote": AsyncRemotePillar, "local": AsyncPillar}.get(
         file_client, AsyncPillar
     )
+    log.debug("Returning pillar driver... pillar/__init__.py")
     return ptype(
         opts,
         grains,
@@ -800,9 +805,12 @@ class Pillar(object):
         reload
             Reload the matcher loader
         """
+        log.debug("Searching through top high data for matches and returning the states the minion needs to execute... pillar/__init__.py")
         matches = {}
         if reload:
+            log.debug("reload kwarg set to True... reloading matchers... pillar/__init__.py")
             self.matchers = salt.loader.matchers(self.opts)
+        log.debug("Loading pillarenv... pillar/__init__.py")
         for saltenv, body in six.iteritems(top):
             if self.opts["pillarenv"]:
                 if saltenv != self.opts["pillarenv"]:
@@ -1168,13 +1176,18 @@ class Pillar(object):
         """
         Render the pillar data and return
         """
+        log.debug("Beginning of compile_pillar() method execution in Pillar object class... pillar/__init__.py")
+        log.debug("Loading top high data... pillar/__init__.py")
         top, top_errors = self.get_top()
         if ext:
+            log.debug("External pillar data detected... pillar/__init__.py")
             if self.opts.get("ext_pillar_first", False):
+                log.debug("Loading external pillar data first... pillar/__init__.py")
                 self.opts["pillar"], errors = self.ext_pillar(self.pillar_override)
                 self.rend = salt.loader.render(self.opts, self.functions)
                 matches = self.top_matches(top, reload=True)
                 pillar, errors = self.render_pillar(matches, errors=errors)
+                log.debug("Merging external pillar data w/ pillar data... pillar/__init__.py")
                 pillar = merge(
                     self.opts["pillar"],
                     pillar,
@@ -1183,7 +1196,10 @@ class Pillar(object):
                     self.opts.get("pillar_merge_lists", False),
                 )
             else:
+                log.debug("Calling top_matches... pillar/__init__.py")
                 matches = self.top_matches(top)
+                log.debug("Calling render_pillar()... pillar/__init__.py")
+                # IN PROG
                 pillar, errors = self.render_pillar(matches)
                 pillar, errors = self.ext_pillar(pillar, errors=errors)
         else:
@@ -1306,5 +1322,8 @@ class Pillar(object):
 class AsyncPillar(Pillar):
     @salt.ext.tornado.gen.coroutine
     def compile_pillar(self, ext=True):
+        log.debug("Beginning of compile_pillar() execution in AsyncPillar object class... pillar/__init__.py")
+        log.debug("Recursively calling compile_pillar w/in AsyncPillar object class... pillar/__init__.py")
+        # IN PROG
         ret = super(AsyncPillar, self).compile_pillar(ext=ext)
         raise salt.ext.tornado.gen.Return(ret)

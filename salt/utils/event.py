@@ -722,12 +722,16 @@ class SaltEvent(object):
 
         The default is 1000 ms
         """
+        log.debug("Beginning of fire_event() execution... utils/event.py")
+        log.debug("Checking if empty tags... utils/event.py")
         if not six.text_type(tag):  # no empty tags allowed
             raise ValueError("Empty tag.")
 
+        log.debug("Checking if data is of type dict{}... utils/event.py")
         if not isinstance(data, MutableMapping):  # data must be dict
             raise ValueError("Dict object expected, not '{0}'.".format(data))
 
+        log.debug("Checking if self.cpush is False... utils/event.py")
         if not self.cpush:
             if timeout is not None:
                 timeout_s = float(timeout) / 1000
@@ -736,9 +740,11 @@ class SaltEvent(object):
             if not self.connect_pull(timeout=timeout_s):
                 return False
 
+        log.debug("Loading data timestamp... utils/event.py")
         data["_stamp"] = datetime.datetime.utcnow().isoformat()
 
         tagend = TAGEND
+        log.debug("Processing data... utils/event.py")
         if six.PY2:
             dump_data = self.serial.dumps(data)
         else:

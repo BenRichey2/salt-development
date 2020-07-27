@@ -388,6 +388,8 @@ def utils(opts, whitelist=None, context=None, proxy=proxy):
     """
     Returns the utility modules
     """
+    log.debug("Beginning of utils() execution... salt/loader.py")
+    log.debug("Calling LazyLoader to load opts dictionary... salt/loader.py")
     return LazyLoader(
         _module_dirs(opts, "utils", ext_type_dirs="utils_dirs"),
         opts,
@@ -465,6 +467,8 @@ def serializers(opts):
     :param dict opts: The Salt options dictionary
     :returns: LazyLoader instance, with only serializers present in the keyspace
     """
+    log.debug("Beginning of serializers() execution... salt/loader.py")
+    log.debug("Loading serializers from opts dict{}... salt/loader.py")
     return LazyLoader(_module_dirs(opts, "serializers"), opts, tag="serializers",)
 
 
@@ -543,7 +547,10 @@ def thorium(opts, functions, runners):
     """
     Load the thorium runtime modules
     """
+    log.debug("Beginning of thorium() execution... salt/loader.py")
+    log.debug("Loading thorium runtime modules... salt/loader.py")
     pack = {"__salt__": functions, "__runner__": runners, "__context__": {}}
+    log.debug("Loading thorium from opts dict{}... salt/loader.py")
     ret = LazyLoader(_module_dirs(opts, "thorium"), opts, tag="thorium", pack=pack)
     ret.pack["__thorium__"] = ret
     return ret
@@ -567,9 +574,11 @@ def states(
         __opts__ = salt.config.minion_config('/etc/salt/minion')
         statemods = salt.loader.states(__opts__, None, None)
     """
+    log.debug("Beginning of states() execution... salt/loader.py")
     if context is None:
         context = {}
 
+    log.debug("Loading states from opts dict{}... salt/laoder.py")
     ret = LazyLoader(
         _module_dirs(opts, "states"),
         opts,
@@ -646,6 +655,7 @@ def render(opts, functions, states=None, proxy=None, context=None):
     """
     Returns the render modules
     """
+    log.debug("Beginning of render() execution... salt/loader.py")
     if context is None:
         context = {}
 
@@ -658,6 +668,7 @@ def render(opts, functions, states=None, proxy=None, context=None):
     if states:
         pack["__states__"] = states
     pack["__proxy__"] = proxy or {}
+    log.debug("Loading in renderers from opts dict{}... salt/loader.py")
     ret = LazyLoader(
         _module_dirs(opts, "renderers", "render", ext_type_dirs="render_dirs",),
         opts,

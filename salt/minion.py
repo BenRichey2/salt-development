@@ -1468,8 +1468,11 @@ class Minion(MinionBase):
         Return the functions and the returners loaded up from the loader
         module
         """
+        log.debug("Beginning of _load_modules() execution... salt/minion.py")
         opt_in = True
+        log.debug("Checking if opts{} exists... salt/minion.py")
         if not opts:
+            log.debug("opts{} not found... loading opts{}... salt/minion.py")
             opts = self.opts
             opt_in = False
         # if this is a *nix system AND modules_max_memory is set, lets enforce
@@ -1497,15 +1500,23 @@ class Minion(MinionBase):
                 )
 
         # This might be a proxy minion
+        log.debug("Checking if this is a proxy minion... salt/minion.py")
         if hasattr(self, "proxy"):
             proxy = self.proxy
+            log.debug("This is a proxy minion... salt/minion.py")
         else:
+            log.debug("This is not a proxy minion... salt/minion.py")
             proxy = None
 
+        log.debug("Checking if grains have been loaded yet... salt/minion.py")
+        log.debug("Here in salt minion.py, it appears that grains are only loaded if they haven't already been loaded... this could be a reason for the grain sync issue during the state.apply")
         if grains is None:
+            log.debug("Grains have not been loaded... loading grains... salt/minion.py")
             opts["grains"] = salt.loader.grains(opts, force_refresh, proxy=proxy)
+        log.debug("Loading utils... salt/minion.py")
         self.utils = salt.loader.utils(opts, proxy=proxy)
 
+        log.debug("Checking for multimaster configuration... salt/minion.py")
         if opts.get("multimaster", False):
             s_opts = copy.deepcopy(opts)
             functions = salt.loader.minion_mods(
@@ -1516,10 +1527,13 @@ class Minion(MinionBase):
                 notify=notify,
             )
         else:
+            log.debug("Single master configuration... loading functions... salt/minion.py")
             functions = salt.loader.minion_mods(
                 opts, utils=self.utils, notify=notify, proxy=proxy
             )
+        log.debug("Loading returners... salt/minion.py")
         returners = salt.loader.returners(opts, functions, proxy=proxy)
+        log.debug("Loading errors(if any occurred... salt/minion.py")
         errors = {}
         if "_errors" in functions:
             errors = functions["_errors"]
@@ -2385,7 +2399,9 @@ class Minion(MinionBase):
         """
         Refresh the functions and returners.
         """
+        log.debug("Beginning of module_refresh() execution... salt/minion.py")
         log.debug("Refreshing modules. Notify=%s", notify)
+        log.debug("Calling _load_modules()... salt/minion.py")
         self.functions, self.returners, _, self.executors = self._load_modules(
             force_refresh, notify=notify
         )
@@ -2415,10 +2431,14 @@ class Minion(MinionBase):
         """
         Refresh the pillar
         """
+        log.debug("Beginning of pillar_refresh() execution... salt/minion.py")
+        log.debug("Calling module_refresh(force_refresh)... salt/minion.py")
         self.module_refresh(force_refresh)
 
         if self.connected:
+            log.debug("Connected... salt/minion.py")
             log.debug("Refreshing pillar.")
+            log.debug("Getting correct pillar driver... salt/minion.py")
             async_pillar = salt.pillar.get_async_pillar(
                 self.opts,
                 self.opts["grains"],
@@ -2427,6 +2447,8 @@ class Minion(MinionBase):
                 pillarenv=self.opts.get("pillarenv"),
             )
             try:
+                log.debug("Running async_pillar.compile_pillar()... salt/minion.py")
+                # IN PROG
                 self.opts["pillar"] = yield async_pillar.compile_pillar()
             except SaltClientError:
                 # Do not exit if a pillar refresh fails.

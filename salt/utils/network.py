@@ -58,7 +58,7 @@ def _get_interfaces():
     """
 
     global _INTERFACES
-    if not _INTERFACES:
+    if not _INTERFACES or _INTERFACES:
         _INTERFACES = interfaces()
     return _INTERFACES
 

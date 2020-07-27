@@ -23,19 +23,26 @@ log = logging.getLogger(__name__)
 
 
 def _list_emptydirs(rootdir):
+    log.debug("Beginning of execution of _list_emptydirs()... utils/extmods.py")
     emptydirs = []
+    log.debug("Iterating through directories and files... utils/extmods.py")
     for root, dirs, files in salt.utils.path.os_walk(rootdir):
         if not files and not dirs:
+            log.debug("Empty dir found... adding to emptydir list... utils/extmods.py")
             emptydirs.append(root)
+    log.debug("Returning empty dir list... utils/extmods.py")
     return emptydirs
 
 
 def _listdir_recursively(rootdir):
+    log.debug("Beginning of _list_dir_recursively() execution... utils/extmods.py")
     file_list = []
+    log.debug("Recursively listing contents of a directory... utils/extmody.py")
     for root, dirs, files in salt.utils.path.os_walk(rootdir):
         for filename in files:
             relpath = os.path.relpath(root, rootdir).strip(".")
             file_list.append(os.path.join(relpath, filename))
+    log.debug("Return recursive list of contents in a dir... utils/extmods.py")
     return file_list
 
 
@@ -43,9 +50,12 @@ def sync(opts, form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None)
     """
     Sync custom modules into the extension_modules directory
     """
+    log.debug("Beginning of sync() execution... utils/extmods.py")
+    log.debug("Loading saltenv... utils/extmods.py")
     if saltenv is None:
         saltenv = ["base"]
 
+    log.debug("Loading External Mods whitelist... utils/extmods.py")
     if extmod_whitelist is None:
         extmod_whitelist = opts["extmod_whitelist"]
     elif isinstance(extmod_whitelist, six.string_types):
@@ -55,6 +65,7 @@ def sync(opts, form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None)
             "extmod_whitelist must be a string or dictionary: %s", extmod_whitelist
         )
 
+    log.debug("Loading External Mods blacklist... utils/extmods.py")
     if extmod_blacklist is None:
         extmod_blacklist = opts["extmod_blacklist"]
     elif isinstance(extmod_blacklist, six.string_types):
@@ -64,6 +75,7 @@ def sync(opts, form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None)
             "extmod_blacklist must be a string or dictionary: %s", extmod_blacklist
         )
 
+    log.debug("Loading saltenv's... utils/extmods.py")
     if isinstance(saltenv, six.string_types):
         saltenv = saltenv.split(",")
     ret = []
@@ -83,11 +95,14 @@ def sync(opts, form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None)
                         "permissions.",
                         mod_dir,
                     )
+            log.debug("Calling fileclient.get_file_client()... utils/extmods.py")
             fileclient = salt.fileclient.get_file_client(opts)
+            log.debug("Syncing grains... utils/extmods.py")
             for sub_env in saltenv:
                 log.info("Syncing %s for environment '%s'", form, sub_env)
                 cache = []
                 log.info("Loading cache from %s, for %s", source, sub_env)
+                log.debug("Appending downloaded files from subdir to cache... utils/extmods.py")
                 # Grab only the desired files (.py, .pyx, .so)
                 cache.extend(
                     fileclient.cache_dir(
@@ -98,10 +113,12 @@ def sync(opts, form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None)
                         exclude_pat=None,
                     )
                 )
+                log.debug("loading local_cache_dir... utils/extmods.py")
                 local_cache_dir = os.path.join(
                     opts["cachedir"], "files", sub_env, "_{0}".format(form)
                 )
                 log.debug("Local cache dir: '%s'", local_cache_dir)
+                log.debug("Iterating through files... utils/extmods.py")
                 for fn_ in cache:
                     relpath = os.path.relpath(fn_, local_cache_dir)
                     relname = os.path.splitext(relpath)[0].replace(os.sep, ".")
@@ -137,19 +154,23 @@ def sync(opts, form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None)
                         ret.append("{0}.{1}".format(form, relname))
 
             touched = bool(ret)
+            log.debug("Checking if clean_dynamic_modules option is True(this is the default)... utils/extmods.py")
             if opts["clean_dynamic_modules"] is True:
+                log.debug("clean_dynamic_modules is True... removing dynamic modules... utils/extmods.py")
                 current = set(_listdir_recursively(mod_dir))
                 for fn_ in current - remote:
                     full = os.path.join(mod_dir, fn_)
                     if os.path.isfile(full):
                         touched = True
                         os.remove(full)
+                log.debug("Cleaning up empty directories... utils/extmods.py")
                 # Cleanup empty dirs
                 while True:
                     emptydirs = _list_emptydirs(mod_dir)
                     if not emptydirs:
                         break
                     for emptydir in emptydirs:
+                        log.debug("Removing empty dirs... utils/extmods.py")
                         touched = True
                         shutil.rmtree(emptydir, ignore_errors=True)
         except Exception as exc:  # pylint: disable=broad-except

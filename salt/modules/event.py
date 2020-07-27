@@ -21,7 +21,6 @@ import salt.utils.zeromq
 __proxyenabled__ = ["*"]
 log = logging.getLogger(__name__)
 
-
 def _dict_subset(keys, master_dict):
     """
     Return a dictionary of only the subset of keys/values specified in keys
@@ -110,6 +109,7 @@ def fire(data, tag):
 
         salt '*' event.fire '{"data":"my event data"}' 'tag'
     """
+    log.debug("Beginning of fire() execution... modules/event.py")
     try:
         with salt.utils.event.get_event(
             "minion",  # was __opts__['id']
@@ -118,6 +118,7 @@ def fire(data, tag):
             opts=__opts__,
             listen=False,
         ) as event:
+            log.debug("Calling fire_event()... modules/event.py")
             return event.fire_event(data, tag)
     except Exception:  # pylint: disable=broad-except
         exc_type, exc_value, exc_traceback = sys.exc_info()

@@ -84,15 +84,23 @@ def _get_top_file_envs():
     """
     Get all environments from the top file
     """
+    log.debug("Beginning of _get_top_file_envs() execution... modules/saltutil.py")
     try:
+        log.debug("Attempting to return saltutil._top_file_envs from __context__{}... modules/saltutil.py")
         return __context__["saltutil._top_file_envs"]
     except KeyError:
         try:
+            log.debug("Instantiating Highstate object class... modules/saltutil.py")
             st_ = salt.state.HighState(__opts__, initial_pillar=__pillar__)
+            log.debug("Loading top file... modules/saltutil.py")
+            log.debug("Calling get_top() method of HighState object class... modules/saltutil.py")
             top = st_.get_top()
             if top:
+                log.debug("Top file found... generating list... modules/saltutil.py")
+                log.debug("Calling top_matches() method og HighState object class... modules/saltutil.py")
                 envs = list(st_.top_matches(top).keys()) or "base"
             else:
+                log.debug("Defaulting to base env... modules/saltutil.py")
                 envs = "base"
         except SaltRenderError as exc:
             raise CommandExecutionError("Unable to render top file(s): {0}".format(exc))
@@ -104,10 +112,16 @@ def _sync(form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None):
     """
     Sync the given directory in the given environment
     """
+    log.debug("Beginning of _sync execution... modules/saltutil.py")
     if saltenv is None:
+        log.debug("Loading `saltenv`... modules/saltutil.py")
+        log.debug("calling _get_top_file_envs()... modules/saltutil.py")
         saltenv = _get_top_file_envs()
     if isinstance(saltenv, six.string_types):
+        log.debug("saltenv is of type string... modules/saltutil.py")
+        log.debug("splitting saltenv by `,`... modules/saltutil.py")
         saltenv = saltenv.split(",")
+        log.debug("Syncing external modules... modules/saltutil.py")
     ret, touched = salt.utils.extmods.sync(
         __opts__,
         form,
@@ -117,6 +131,7 @@ def _sync(form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None):
     )
     # Dest mod_dir is touched? trigger reload if requested
     if touched:
+        log.debug("Opening touched files... modules/saltutil.py")
         mod_file = os.path.join(__opts__["cachedir"], "module_refresh")
         with salt.utils.files.fopen(mod_file, "a"):
             pass
@@ -125,6 +140,7 @@ def _sync(form, saltenv=None, extmod_whitelist=None, extmod_blacklist=None):
         and __opts__.get("grains_cache")
         and os.path.isfile(os.path.join(__opts__["cachedir"], "grains.cache.p"))
     ):
+        log.debug("Form to be synced is `grains`... removing grains cachedir... modules/saltutil.py")
         try:
             os.remove(os.path.join(__opts__["cachedir"], "grains.cache.p"))
         except OSError:
@@ -394,17 +410,23 @@ def refresh_grains(**kwargs):
 
         salt '*' saltutil.refresh_grains
     """
+    log.debug("Beginning of refresh_grains() execution... modules/saltutil.py")
+    log.debug("Loading kwargs... modules/saltutil.py")
     kwargs = salt.utils.args.clean_kwargs(**kwargs)
+    log.debug("Checking if refresh_pillar kwarg is set to True(True is default)... modules/saltutil.py")
     _refresh_pillar = kwargs.pop("refresh_pillar", True)
     if kwargs:
+        log.debug("Checking for invalid kwargs... modules/saltutil.py")
         salt.utils.args.invalid_kwargs(kwargs)
     # Modules and pillar need to be refreshed in case grains changes affected
     # them, and the module refresh process reloads the grains and assigns the
     # newly-reloaded grains to each execution module's __grains__ dunder.
     if _refresh_pillar:
+        log.debug("refresh_pillar=True... refreshing pillar... modules/saltutil.py")
         # we don't need to call refresh_modules here because it's done by refresh_pillar
         refresh_pillar()
     else:
+        log.debug("refresh_pillar=False... calling  refresh_modules asynchronously... modules/saltutil.py")
         refresh_modules()
     return True
 
@@ -445,9 +467,12 @@ def sync_grains(
         salt '*' saltutil.sync_grains saltenv=dev
         salt '*' saltutil.sync_grains saltenv=base,dev
     """
+    log.debug("Beginning of sync_grains() execution... modules/saltutil.py")
+    log.debug("Calling _sync() w/ 'grains' as the `form` arg... modules/saltutil.py")
     ret = _sync("grains", saltenv, extmod_whitelist, extmod_blacklist)
     if refresh:
         # we don't need to call refresh_modules here because it's done by refresh_pillar
+        log.debug("refresh kwarg set to True... refreshing pillar by calling refresh_pillar()... modules/saltutil.py")
         refresh_pillar()
     return ret
 
@@ -1052,40 +1077,60 @@ def sync_all(saltenv=None, refresh=True, extmod_whitelist=None, extmod_blacklist
         salt '*' saltutil.sync_all saltenv=base,dev
         salt '*' saltutil.sync_all extmod_whitelist={'modules': ['custom_module']}
     """
+    log.debug("Beginning of sync_all() execution... modules/saltutil.py")
     log.debug("Syncing all")
     ret = {}
+    log.debug("Syncing clouds... modules/saltutil.py")
     ret["clouds"] = sync_clouds(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing beacons...modules/saltutil.py")
     ret["beacons"] = sync_beacons(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing modules...modules/saltutil.py")
     ret["modules"] = sync_modules(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing states...modules/saltutil.py")
     ret["states"] = sync_states(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing sdb...modules/saltutil.py")
     ret["sdb"] = sync_sdb(saltenv, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing grains...modules/saltutil.py")
     ret["grains"] = sync_grains(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing renderers...modules/saltutil.py")
     ret["renderers"] = sync_renderers(
         saltenv, False, extmod_whitelist, extmod_blacklist
     )
+    log.debug("Syncing returners...modules/saltutil.py")
     ret["returners"] = sync_returners(
         saltenv, False, extmod_whitelist, extmod_blacklist
     )
+    log.debug("Syncing output...modules/saltutil.py")
     ret["output"] = sync_output(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing utilities...modules/saltutil.py")
     ret["utils"] = sync_utils(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing log_handlers...modules/saltutil.py")
     ret["log_handlers"] = sync_log_handlers(
         saltenv, False, extmod_whitelist, extmod_blacklist
     )
+    log.debug("Syncing executors...modules/saltutil.py")
     ret["executors"] = sync_executors(
         saltenv, False, extmod_whitelist, extmod_blacklist
     )
+    log.debug("Syncing proxymodules...modules/saltutil.py")
     ret["proxymodules"] = sync_proxymodules(
         saltenv, False, extmod_whitelist, extmod_blacklist
     )
+    log.debug("Syncing engines...modules/saltutil.py")
     ret["engines"] = sync_engines(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing thorium...modules/saltutil.py")
     ret["thorium"] = sync_thorium(saltenv, False, extmod_whitelist, extmod_blacklist)
+    log.debug("Syncing serializers...modules/saltutil.py")
     ret["serializers"] = sync_serializers(
         saltenv, False, extmod_whitelist, extmod_blacklist
     )
+    log.debug("Syncing matchers...modules/saltutil.py")
     ret["matchers"] = sync_matchers(saltenv, False, extmod_whitelist, extmod_blacklist)
     if __opts__["file_client"] == "local":
+        log.debug("file_client is local... syncing pillar...modules/saltutil.py")
         ret["pillar"] = sync_pillar(saltenv, False, extmod_whitelist, extmod_blacklist)
     if refresh:
+        log.debug("refresh **kwarg set to True(this is the default)... refreshing pillar...modules/saltutil.py")
         # we don't need to call refresh_modules here because it's done by refresh_pillar
         refresh_pillar()
     return ret
@@ -1144,12 +1189,16 @@ def refresh_pillar(wait=False, timeout=30):
         salt '*' saltutil.refresh_pillar
         salt '*' saltutil.refresh_pillar wait=True timeout=60
     """
+    log.debug("Beginning of refresh_pillar() execution... modules/saltutil.py")
     try:
+        log.debug("Checking if wait=True(defaults to False)... if so, block... modules/saltutil.py")
         if wait:
+            log.debug("`wait`=True... setting up listener for blocking... modules/saltutil.py")
             #  If we're going to block, first setup a listener
             with salt.utils.event.get_event(
                 "minion", opts=__opts__, listen=True
             ) as eventer:
+                log.debug("Firing pillar_refresh event...modules/saltutil.py")
                 ret = __salt__["event.fire"]({}, "pillar_refresh")
                 # Wait for the finish event to fire
                 log.trace("refresh_pillar waiting for pillar refresh to complete")
@@ -1187,17 +1236,24 @@ def refresh_modules(**kwargs):
 
         salt '*' saltutil.refresh_modules
     """
+    log.debug("Beginning of refresh_modules() execution... modules/saltutil.py")
+    log.debug("Checking for asynchronous refresh... modules/saltutil.py")
     asynchronous = bool(kwargs.get("async", True))
     try:
         if asynchronous:
+            log.debug("async refresh = True... refreshing asynchronously... modules/saltutil.py")
+            log.debug("Firing module_refresh event... modules/saltutil.py")
             ret = __salt__["event.fire"]({}, "module_refresh")
         else:
+            log.debug("Refreshing modules synchronously... setting up listener... modules/saltutil.py")
             #  If we're going to block, first setup a listener
             with salt.utils.event.get_event(
                 "minion", opts=__opts__, listen=True
             ) as eventer:
+                log.debug("Firing `module_refresh` event... modules/saltutil.py")
                 ret = __salt__["event.fire"]({"notify": True}, "module_refresh")
                 # Wait for the finish event to fire
+                log.debug("Waiting for refresh_modules to complete... modules/saltutil.py")
                 log.trace("refresh_modules waiting for module refresh to complete")
                 # Blocks until we hear this event or until the timeout expires
                 eventer.get_event(

@@ -58,9 +58,12 @@ def get_file_client(opts, pillar=False):
     Read in the ``file_client`` option and return the correct type of file
     server
     """
+    log.debug("Beginning of get_file_client() execution... salt/fileclient.py")
+    log.debug("Loading `file_client` : `remote`... salt/fileclient.py")
     client = opts.get("file_client", "remote")
     if pillar and client == "local":
         client = "pillar"
+    log.debug("Returning the correct type of file server... salt/fileclient.py")
     return {"remote": RemoteClient, "local": FSClient, "pillar": PillarClient}.get(
         client, RemoteClient
     )(opts)
@@ -186,6 +189,8 @@ class Client(object):
         Pull a file down from the file server and store it in the minion
         file cache
         """
+        log.debug("Beginning of cache_file() execution... salt/fileclient.py")
+        log.debug("Returning function get_url()... salt/fileclient.py")
         return self.get_url(
             path, "", True, saltenv, cachedir=cachedir, source_hash=source_hash
         )
@@ -225,28 +230,34 @@ class Client(object):
         """
         Download all of the files in a subdir of the master
         """
+        log.debug("Beginning of cache_dir() execution... salt/fileclient.py")
         ret = []
 
+        log.debug("Loading file path... salt/fileclient.py")
         path = self._check_proto(salt.utils.data.decode(path))
         # We want to make sure files start with this *directory*, use
         # '/' explicitly because the master (that's generating the
         # list of files) only runs on POSIX
         if not path.endswith("/"):
+            log.debug("Making sure path ends with `/`... salt/fileclient.py")
             path = path + "/"
 
         log.info("Caching directory '%s' for environment '%s'", path, saltenv)
         # go through the list of all files finding ones that are in
         # the target directory and caching them
+        log.debug("Iterating through all files and caching ones in target directory... salt/fileclient.py")
         for fn_ in self.file_list(saltenv):
             fn_ = salt.utils.data.decode(fn_)
             if fn_.strip() and fn_.startswith(path):
                 if salt.utils.stringutils.check_include_exclude(
                     fn_, include_pat, exclude_pat
                 ):
+                    log.debug("Caching files in tgt dir... salt/fileclient.py")
                     fn_ = self.cache_file(
                         salt.utils.url.create(fn_), saltenv, cachedir=cachedir
                     )
                     if fn_:
+                        log.debug("Loading downloaded files from subdir... salt/fileclient.py")
                         ret.append(fn_)
 
         if include_empty:
@@ -269,6 +280,7 @@ class Client(object):
                     if not os.path.isdir(minion_dir):
                         os.makedirs(minion_dir)
                     ret.append(minion_dir)
+        log.debug("returning files downloaded from subdir... salt/fileclient.py")
         return ret
 
     def cache_local_file(self, path, **kwargs):
@@ -471,11 +483,17 @@ class Client(object):
         """
         Get a single file from a URL.
         """
+        log.debug("Beginning execution of get_url()... salt/fileclient.py")
+        log.debug("Getting a single file from a url... salt/fileclient.py")
+        log.debug("Calling built-in urlparse() to load url data... salt/fileclient.py")
         url_data = urlparse(url)
+        log.debug("Loading url scheme... salt/fileclient.py")
         url_scheme = url_data.scheme
+        log.debug("Loading url path... salt/fileclient.py")
         url_path = os.path.join(url_data.netloc, url_data.path).rstrip(os.sep)
 
         # If dest is a directory, rewrite dest with filename
+        log.debug("Check if destination is a directory and if so, rewrite destination w/ filename... salt/fileclient.py")
         if dest is not None and (os.path.isdir(dest) or dest.endswith(("/", "\\"))):
             if (
                 url_data.query

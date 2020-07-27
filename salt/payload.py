@@ -70,11 +70,15 @@ class Serial(object):
     """
 
     def __init__(self, opts):
+        log.debug("Initializing Serialization object to transform messages into storable data... line 73 salt/payload.py")
+        log.debug("Checking if opts is of type dict{}... line 75 salt/payload.py")
         if isinstance(opts, dict):
+            log.debug("Assigning serialization method w/ a default of msgpack... line 78 salt/payload.py")
             self.serial = opts.get("serial", "msgpack")
         elif isinstance(opts, six.string_types):
             self.serial = opts
         else:
+            log.debug("Defaulting Serialization method to msgpack... line 83 salt/payload.py")
             self.serial = "msgpack"
 
     def loads(self, msg, encoding=None, raw=False):

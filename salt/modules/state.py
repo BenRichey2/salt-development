@@ -144,10 +144,13 @@ def _snapper_pre(opts, jid):
     """
     Create a snapper pre snapshot
     """
+    log.debug("Beginning of execution of _snapper_pre()... modules/state.py")
     snapper_pre = None
     try:
+        log.debug("Checking state.apply is not in test mode and the system has snapper.io... modules/state.py") 
         if not opts["test"] and __opts__.get("snapper_states"):
             # Run the snapper pre snapshot
+            log.debug("Snapper enabled and creating filesystem snapshot... modules/state.py")
             snapper_pre = __salt__["snapper.create_snapshot"](
                 config=__opts__.get("snapper_states_config", "root"),
                 snapshot_type="pre",
@@ -796,8 +799,11 @@ def apply_(mods=None, **kwargs):
 
         .. versionadded:: 2017.7.8,2018.3.3,2019.2.0
     """
+    log.debug("state.apply() called... line 799 modules/state.py")
     if mods:
+        log.debug("mods detected at salt/modules/state.py line 800... sls() being called.")
         return sls(mods, **kwargs)
+    log.debug("highstate() being called... line 805 modules/state.py")
     return highstate(**kwargs)
 
 
@@ -1049,6 +1055,7 @@ def highstate(test=None, queue=False, **kwargs):
 
         salt '*' state.highstate pillar="{foo: 'Foo!', bar: 'Bar!'}"
     """
+    log.debug("Beginning of highstate() function execution... line 1058 modules/state.py")
     if _disabled(["highstate"]):
         log.debug(
             "Salt highstate run is disabled. To re-enable, run state.enable highstate"
@@ -1060,25 +1067,38 @@ def highstate(test=None, queue=False, **kwargs):
         }
         return ret
 
+    log.debug("checking conflicts in queue... line 1070 modules/state.py")
     conflict = _check_queue(queue, kwargs)
     if conflict is not None:
+        log.debug("conflict found... line 1073 modules/state.py")
         return conflict
 
+    log.debug("Determining if running in test mode or not... line 1078 modules/state.py")
+    log.debug("Loading value for `test` key in opts dict... line 1079 modules/state.py")
     orig_test = __opts__.get("test", None)
+    log.debug("loading sls opts dictionary... line 1082 modules/state.py")
     opts = salt.utils.state.get_sls_opts(__opts__, **kwargs)
     opts["test"] = _get_test_value(test, **kwargs)
 
+    log.debug("Checking for `env` kwarg passed in Highstate() call... line 1088 modules/state.py")
     if "env" in kwargs:
+        log.debug("`env` kwarg detected... line 1091 modules/state.py")
         # "env" is not supported; Use "saltenv".
         kwargs.pop("env")
 
+    log.debug("Checking for `saltenv` kwarg passed in Highstate() call... line 1095 modules/state.py")
     if "saltenv" in kwargs:
+        log.debug("`saltenv` kwarg detected... line 1098 modules/state.py")
         opts["saltenv"] = kwargs["saltenv"]
 
+    log.debug("Checking for `pillarenv` kwarg in Highstate() call... line 1103 modules/state.py")
     if "pillarenv" in kwargs:
+        log.debug("`pillarenv` kwarg detected... line 1106 modules/state.py")
         opts["pillarenv"] = kwargs["pillarenv"]
 
+    log.debug("Checking for pillar override kwargs... line 1110 modules/state.py")
     pillar_override = kwargs.get("pillar")
+    log.debug("Checking for pillar encoding in kwargs... line 1113 modules/state.py")
     pillar_enc = kwargs.get("pillar_enc")
     if (
         pillar_enc is None
@@ -1090,6 +1110,7 @@ def highstate(test=None, queue=False, **kwargs):
             "is specified."
         )
 
+    log.debug("Attempting to call state.HighState class object... line 1126 modules/state.py")
     try:
         st_ = salt.state.HighState(
             opts,
@@ -1111,15 +1132,22 @@ def highstate(test=None, queue=False, **kwargs):
             initial_pillar=_get_initial_pillar(opts),
         )
 
+    log.debug("Gathering pillar errors... modules/state.py")
     errors = _get_pillar_errors(kwargs, st_.opts["pillar"])
+    log.debug("Checking if errors occurred... modules/state.py")
     if errors:
+        log.debug("Errors occurred... loading return codes... modules/state.py")
         __context__["retcode"] = salt.defaults.exitcodes.EX_PILLAR_FAILURE
         return ["Pillar failed to render with the following messages:"] + errors
 
+    log.debug("Calling push_active() function... modules/state.py")
     st_.push_active()
+    log.debug("Loading orchestration_jid... modules/state.py")
     orchestration_jid = kwargs.get("orchestration_jid")
+    log.debug("Preparing to take a snapshot... modules/state.py")
     snapper_pre = _snapper_pre(opts, kwargs.get("__pub_jid", "called localy"))
     try:
+        log.debug("Attempting to call_highstate() for return codes... modules/state.py")
         ret = st_.call_highstate(
             exclude=kwargs.get("exclude", []),
             cache=kwargs.get("cache", None),

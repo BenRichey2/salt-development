@@ -340,10 +340,14 @@ def master_compile(master_opts, minion_opts, grains, id_, saltenv):
 
 
 def ishashable(obj):
+    log.debug("Checking if object is hashable... salt/state.py")
     try:
+        log.debug("Attempting to hash object... salt/state.py")
         hash(obj)
     except TypeError:
+        log.debug("Object is not hashable... salt/state.py")
         return False
+    log.debug("It's been a `hashing` success... haha get it? Object is hashable... salt/state.py")
     return True
 
 
@@ -450,41 +454,63 @@ class Compiler(object):
         """
         Verify that the high data is viable and follows the data structure
         """
+        log.debug("Beginning of verify_high() execution... salt/state.py")
         errors = []
+        log.debug("Confirming high data is of type dict{}... salt/state.py")
         if not isinstance(high, dict):
+            log.debug("ERROR: high data is not a dictionary... salt/state.py") 
+            log.debug("Adding error to errors list... salt/state.py")
             errors.append("High data is not a dictionary and is invalid")
+        log.debug("Instantiating an OrderedDict() of requests... salt/state.py")
         reqs = OrderedDict()
+        log.debug("Checking the high data is in proper format... salt/state.py")
         for name, body in six.iteritems(high):
+            log.debug("Checking if key in high{} is private(starts w/ '__')... salt/state.py")
             if name.startswith("__"):
                 continue
+            log.debug("Checking if key in high{} is of type string... salt/state.py")
             if not isinstance(name, six.string_types):
+                log.debug("Key in high{} not of type string... logging error... salt/state.py")
                 errors.append(
                     "ID '{0}' in SLS '{1}' is not formed as a string, but "
                     "is a {2}".format(name, body["__sls__"], type(name).__name__)
                 )
+            log.debug("Checking if value in high{} is of type dict{}... salt/state.py")
             if not isinstance(body, dict):
+                log.debug("Value in high{} not of type dict{}... logging error... salt/state.py")
                 err = "The type {0} in {1} is not formatted as a dictionary".format(
                     name, body
                 )
                 errors.append(err)
                 continue
+            log.debug("Checking sls data is formatted properly... salt/state.py")
             for state in body:
+                log.debug("Checking if state keys are private(start w/ '__')... salt/state.py")
                 if state.startswith("__"):
                     continue
+                log.debug("Checking values in states are of type list... salt/state.py")
                 if not isinstance(body[state], list):
+                    log.debug("Values in states are not formatted properly... logging error... salt/state.py")
                     errors.append(
                         "State '{0}' in SLS '{1}' is not formed as a list".format(
                             name, body["__sls__"]
                         )
                     )
                 else:
+                    log.debug("Now parsing through sls files for functions... salt/state.py")
                     fun = 0
+                    log.debug("Checking for one or more functions per state... salt/state.py")
                     if "." in state:
+                        log.debug("Function detected... salt/state.py")
                         fun += 1
+                    log.debug("Parsing through arguments passed to functions... salt/state.py")
                     for arg in body[state]:
+                        log.debug("Checking if arguments are of type string... salt/state.py")
                         if isinstance(arg, six.string_types):
+                            log.debug("Function detected... salt/state.py")
                             fun += 1
                             if " " in arg.strip():
+                                log.debug("Whitespace discovered in function call... logging error... salt/state.py")
                                 errors.append(
                                     (
                                         'The function "{0}" in state '
@@ -495,14 +521,20 @@ class Compiler(object):
                                     ).format(arg, name, body["__sls__"])
                                 )
                         elif isinstance(arg, dict):
+
+                            log.debug("Checking if function argument is of type dict{}... salt/state.py")
                             # The arg is a dict, if the arg is require or
                             # watch, it must be a list.
                             #
                             # Add the requires to the reqs dict and check them
                             # all for recursive requisites.
+                            log.debug("Getting the next argument in args list... salt/state.py")
                             argfirst = next(iter(arg))
+                            log.debug("Detecting if argument is a require or watch... salt/state.py")
                             if argfirst in ("require", "watch", "prereq", "onchanges"):
+                                log.debug("Checking if require/watch is of type list")
                                 if not isinstance(arg[argfirst], list):
+                                    log.debug("require/watch argument is not of type list... logging error... salt/state.py")
                                     errors.append(
                                         (
                                             "The {0}"
@@ -513,11 +545,16 @@ class Compiler(object):
                                 # It is a list, verify that the members of the
                                 # list are all single key dicts.
                                 else:
+                                    log.debug("Argument is of type list... salt/state.py")
                                     reqs[name] = {"state": state}
                                     for req in arg[argfirst]:
+                                        log.debug("Checking requisite are of type string... salt/state.py")
                                         if isinstance(req, six.string_types):
+                                            log.debug("Requisite is of type string... setting key to id and req to value... salt/state.py")
                                             req = {"id": req}
+                                        log.debug("Checking if requisites are of type dict... salt/state.py")
                                         if not isinstance(req, dict):
+                                            log.debug("Requisite is not of type string... logging error... salt/state.py")
                                             err = (
                                                 "Requisite declaration {0}"
                                                 " in SLS {1} is not formed as a"
@@ -525,9 +562,12 @@ class Compiler(object):
                                             ).format(req, body["__sls__"])
                                             errors.append(err)
                                             continue
+                                        log.debug("Loading key:value pair for requisite... salt/state.py")
                                         req_key = next(iter(req))
                                         req_val = req[req_key]
+                                        log.debug("Checking for invalid requisite types... salt/state.py")
                                         if "." in req_key:
+                                            log.debug("Invalid requisisite format... logging error... salt/state.py")
                                             errors.append(
                                                 (
                                                     "Invalid requisite type '{0}' "
@@ -542,7 +582,9 @@ class Compiler(object):
                                                     )
                                                 )
                                             )
+                                        log.debug("Checking if requisite value is hashable... ")
                                         if not ishashable(req_val):
+                                            log.debug("Unfortunately, requisite value is not hashable... logging error... salt/state.py")
                                             errors.append(
                                                 (
                                                     'Illegal requisite "{0}", '
@@ -555,17 +597,22 @@ class Compiler(object):
                                             continue
 
                                         # Check for global recursive requisites
+                                        log.debug("Checking for global recursive requisites... salt/state.py")
                                         reqs[name][req_val] = req_key
                                         # I am going beyond 80 chars on
                                         # purpose, this is just too much
                                         # of a pain to deal with otherwise
+                                        log.debug("Checking for values in requisite dictionary... salt/state.py")
                                         if req_val in reqs:
+                                            log.debug("Checking for name in requisite dict{}... salt/state.py")
                                             if name in reqs[req_val]:
+                                                log.debug("Checking that requisite name is equal to the state... salt/state.py")
                                                 if reqs[req_val][name] == state:
                                                     if (
                                                         reqs[req_val]["state"]
                                                         == reqs[name][req_val]
                                                     ):
+                                                        log.debug("Recursive requisite found... logging error... salt/state.py")
                                                         err = (
                                                             "A recursive "
                                                             "requisite was found, SLS "
@@ -578,7 +625,9 @@ class Compiler(object):
                                                         errors.append(err)
                                 # Make sure that there is only one key in the
                                 # dict
+                                log.debug("Checking there is only one key in the dict{}... salt/state.py")
                                 if len(list(arg)) != 1:
+                                    log.debug("Multiple dicts{} not supported in argument of state... salt/state.py")
                                     errors.append(
                                         (
                                             "Multiple dictionaries "
@@ -586,19 +635,25 @@ class Compiler(object):
                                             " '{1}'"
                                         ).format(name, body["__sls__"])
                                     )
+                    log.debug("Checking if no functions detected... salt/state.py")
                     if not fun:
+                        log.debug("Checking if state is not require or watch... salt/state.py")
                         if state == "require" or state == "watch":
                             continue
+                        log.debug("No function declared in state... logging error... salt/state.py")
                         errors.append(
                             (
                                 "No function declared in state '{0}' in" " SLS '{1}'"
                             ).format(state, body["__sls__"])
                         )
                     elif fun > 1:
+                        log.debug("Checking if more than one function is declared per state... salt/state.py")
+                        log.debug("Too many functions declared in state... logging error... salt/state.py")
                         errors.append(
                             "Too many functions declared in state '{0}' in "
                             "SLS '{1}'".format(state, body["__sls__"])
                         )
+        log.debug("Returning all collected errors but hopefully there are none because errors are bad... salt/state.py")
         return errors
 
     def order_chunks(self, chunks):
@@ -645,34 +700,55 @@ class Compiler(object):
         "Compile" the high data as it is retrieved from the CLI or YAML into
         the individual state executor structures
         """
+        log.debug("Beginning of compile_high_data() execution... salt/state.py")
         chunks = []
+        log.debug("Iterating through high data... salt/state.py")
         for name, body in six.iteritems(high):
+            log.debug("Checking for private data structures(starts w/ '__')... salt/state.py")
             if name.startswith("__"):
                 continue
+            log.debug("Iterating through high data... salt/state.py")
             for state, run in six.iteritems(body):
+                log.debug("Instantiating a set{} for functions... salt/state.py")
                 funcs = set()
+                log.debug("Instantiating a list for name... salt/state.py")
                 names = []
+                log.debug("Checking if state is a private data structure(starts w/ '__')... salt/state.py")
                 if state.startswith("__"):
                     continue
+                log.debug("Generating state chunks structure... salt/state.py")
                 chunk = {"state": state, "name": name}
+                log.debug("Checking for sls... salt/state.py")
                 if "__sls__" in body:
+                    log.debug("Generating sls chunks... salt/state.py")
                     chunk["__sls__"] = body["__sls__"]
+                log.debug("Checking for env... salt/state.py")
                 if "__env__" in body:
+                    log.debug("Generating env chunks... salt/state.py")
                     chunk["__env__"] = body["__env__"]
+                log.debug("Assigning names to chunks... salt/state.py")
                 chunk["__id__"] = name
+                log.debug("Iterating through arguments... salt/state.py")
                 for arg in run:
+                    log.debug("Checking if argument is of type string... salt/state.py")
                     if isinstance(arg, six.string_types):
+                        log.debug("Function argument detected and add... salt/state.py")
                         funcs.add(arg)
                         continue
+                    log.debug("Checking if arg is of type dict{}... salt/state.py")
                     if isinstance(arg, dict):
+                        log.debug("arg is of type dict{}... iterating through dict{}... salt/state.py")
                         for key, val in six.iteritems(arg):
+                            log.debug("Loading names... salt/state.py")
                             if key == "names":
                                 for _name in val:
                                     if _name not in names:
                                         names.append(_name)
                                 continue
                             else:
+                                log.debug("Adding arguments to data chunks... salt/state.py")
                                 chunk.update(arg)
+                log.debug("Loading names/functions... salt/state.py")
                 if names:
                     name_order = 1
                     for entry in names:
@@ -693,6 +769,7 @@ class Compiler(object):
                     for fun in funcs:
                         live["fun"] = fun
                         chunks.append(live)
+        log.debug("returning chunks in proper compilation order... salt/state.py")
         chunks = self.order_chunks(chunks)
         return chunks
 
@@ -701,32 +778,48 @@ class Compiler(object):
         Read in the __exclude__ list and remove all excluded objects from the
         high data
         """
+        log.debug("Beginning of apply_exclude() execution... salt/state.py")
+        log.debug("Checking for exclusions... salt/state.py")
         if "__exclude__" not in high:
+            log.debug("No exclusions found... returning high{} data... salt/state.py")
             return high
+        log.debug("Instantiating set{} for sls exclusions... salt/state.py")
         ex_sls = set()
+        log.debug("Instantitaing set{} for id exclusions... salt/state.py")
         ex_id = set()
+        log.debug("`popping` exclusions from top of high data exclusion stack... salt/state.py")
         exclude = high.pop("__exclude__")
+        log.debug("Iterating through all exclusions... salt/state.py")
         for exc in exclude:
+            log.debug("Checking if exclusion is an sls... salt/state.py")
             if isinstance(exc, six.string_types):
+                log.debug("sls exclusion found... salt/state.py")
                 # The exclude statement is a string, assume it is an sls
                 ex_sls.add(exc)
+            log.debug("Checking for explicitly declared exclusions... salt/state.py")
             if isinstance(exc, dict):
+                log.debug("Explicitly declared exclusisions found... salt/state.py")
                 # Explicitly declared exclude
                 if len(exc) != 1:
+                    log.debug("Loading explicitly declared exclusion... salt/state.py")
                     continue
                 key = next(six.iterkeys(exc))
                 if key == "sls":
                     ex_sls.add(exc["sls"])
                 elif key == "id":
                     ex_id.add(exc["id"])
+        log.debug("Exclusions parsed/simplified... using them now... salt/state.py")
         # Now the excludes have been simplified, use them
+        log.debug("Checking for sls excludes... salt/state.py")
         if ex_sls:
+            log.debug("sls excludes found... finding ids... salt/state.py")
             # There are sls excludes, find the associtaed ids
             for name, body in six.iteritems(high):
                 if name.startswith("__"):
                     continue
                 if body.get("__sls__", "") in ex_sls:
                     ex_id.add(name)
+        log.debug("Iterating through exclusions and `popping` them from high data stack... salt/state.py")
         for id_ in ex_id:
             if id_ in high:
                 high.pop(id_)
@@ -753,6 +846,8 @@ class State(object):
         self.states_loader = loader
         if "grains" not in opts:
             opts["grains"] = salt.loader.grains(opts)
+	# GRAIN REFRESH FIX BELOW 
+        #opts["grains"] = salt.loader.grains(opts)
         self.opts = opts
         self.proxy = proxy
         self._pillar_override = pillar_override
@@ -1113,11 +1208,14 @@ class State(object):
         """
         Read the state loader value and loadup the correct states subsystem
         """
+        log.debug("Beginning of _load_states() execution... salt/state.py")
         if self.states_loader == "thorium":
+            log.debug("Calling salt.loader.thorium()... salt/state.py")
             self.states = salt.loader.thorium(
                 self.opts, self.functions, {}
             )  # TODO: Add runners, proxy?
         else:
+            log.debug("Loading states... calling salt.loader.states()... salt/sate.py")
             self.states = salt.loader.states(
                 self.opts,
                 self.functions,
@@ -1131,8 +1229,11 @@ class State(object):
         """
         Load the modules into the state
         """
+        log.debug("Beginning of load_modules() execution... salt/state.py")
         log.info("Loading fresh modules for state activity")
+        log.debug("Loading utilities... salt/state.py")
         self.utils = salt.loader.utils(self.opts)
+        log.debug("Loading minion_mods... salt/state.py")
         self.functions = salt.loader.minion_mods(
             self.opts, self.state_con, utils=self.utils, proxy=self.proxy
         )
@@ -1146,6 +1247,7 @@ class State(object):
                     providers = {}
                 for provider in providers:
                     for mod in provider:
+                        log.debug("Loading functions... salt/state.py")
                         funcs = salt.loader.raw_mod(
                             self.opts, provider[mod], self.functions
                         )
@@ -1153,8 +1255,11 @@ class State(object):
                             for func in funcs:
                                 f_key = "{0}{1}".format(mod, func[func.rindex(".") :])
                                 self.functions[f_key] = funcs[func]
+        log.debug("Loading serializers... salt/state.py")
         self.serializers = salt.loader.serializers(self.opts)
+        log.debug("Calling _load_states()... salt/state.py")
         self._load_states()
+        log.debug("Loading renderers... salt/state.py")
         self.rend = salt.loader.render(
             self.opts,
             self.functions,
@@ -1167,6 +1272,7 @@ class State(object):
         """
         Refresh all the modules
         """
+        log.debug("beginning of module_refresh() execution... salt/state.py")
         log.debug("Refreshing modules...")
         if self.opts["grains"].get("os") != "MacOS":
             # In case a package has been installed into the current python
@@ -1182,6 +1288,7 @@ class State(object):
                 log.error(
                     "Error encountered during module reload. Modules were not reloaded."
                 )
+        log.debug("Calling load_modules()... salt/state.py")
         self.load_modules()
         if not self.opts.get("local", False) and self.opts.get("multiprocessing", True):
             self.functions["saltutil.refresh_modules"]()
@@ -1494,24 +1601,36 @@ class State(object):
         Sort the chunk list verifying that the chunks follow the order
         specified in the order options.
         """
+        log.debug("Beginning of order_chunks() execution... salt/state.py")
+        log.debug("Making sure the high data chunks are ordered according to the order options... salt/state.py")
         cap = 1
+        log.debug("Iterating through data chunks... salt/state.py")
         for chunk in chunks:
+            log.debug("Checking for order options... salt/state.py")
             if "order" in chunk:
+                log.debug("Checking order option of type int... salt/state.py")
                 if not isinstance(chunk["order"], int):
+                    log.debug("Order option not of type int... Invalid... Skipping... salt/state.py")
                     continue
 
+                log.debug("Loading order of current high data chunk... salt/state.py")
                 chunk_order = chunk["order"]
                 if chunk_order > cap - 1 and chunk_order > 0:
                     cap = chunk_order + 100
         for chunk in chunks:
+            log.debug("Checking if high data chunk has specified compilation order... salt/state.py")
             if "order" not in chunk:
+                log.debug("No specified compilation order for this chunk... compiling in arbitrary order... salt/state.py")
                 chunk["order"] = cap
                 continue
 
+            log.debug("Checking if current chunk's order is specified by string... salt/state.py")
             if not isinstance(chunk["order"], (int, float)):
                 if chunk["order"] == "last":
+                    log.debug("Data chunks order set to be last... salt/state.py")
                     chunk["order"] = cap + 1000000
                 elif chunk["order"] == "first":
+                    log.debug("Data chunks order set to first... salt/state.py")
                     chunk["order"] = 0
                 else:
                     chunk["order"] = cap
@@ -1519,12 +1638,14 @@ class State(object):
                 chunk["order"] = chunk["order"] + chunk.pop("name_order") / 10000.0
             if chunk["order"] < 0:
                 chunk["order"] = cap + 1000000 + chunk["order"]
+        log.debug("Sorting chunks... salt/state.py")
         chunks.sort(
             key=lambda chunk: (
                 chunk["order"],
                 "{0[state]}{0[name]}{0[fun]}".format(chunk),
             )
         )
+        log.debug("Returning data chunks in sorted order for compilation... salt/state.py")
         return chunks
 
     def compile_high_data(self, high, orchestration_jid=None):
@@ -1711,6 +1832,8 @@ class State(object):
         """
         Extend the data reference with requisite_in arguments
         """
+        log.debug("Beginning of requisite_in() execution... salt/state.py")
+        log.debug("Loading requisite_in kwargs... salt/state.py")
         req_in = {
             "require_in",
             "watch_in",
@@ -1721,48 +1844,77 @@ class State(object):
             "prereq",
             "prereq_in",
         }
+        log.debug("Loading all requisite in kwargs... salt/state.py")
         req_in_all = req_in.union(
             {"require", "watch", "onfail", "onfail_stop", "onchanges"}
         )
+        log.debug("Instantiating extend{}... salt/state.py")
         extend = {}
+        log.debug("Instantiating errors[]... salt/state.py")
         errors = []
+        log.debug("Loading disabled requisites... salt/state.py")
         disabled_reqs = self.opts.get("disabled_requisites", [])
+        log.debug("Checking disabled requisites is of type list[]... salt/state.py")
         if not isinstance(disabled_reqs, list):
+            log.debug("Converting disabled requisites to type list[]... salt/state.py")
             disabled_reqs = [disabled_reqs]
         for id_, body in six.iteritems(high):
+            log.debug("Checking if body is not a dict{}... salt/state.py")
             if not isinstance(body, dict):
+                log.debug("body is not a dict{}... continuing... salt/state.py")
                 continue
+            log.debug("Iterating throug requisites... salt/state.py")
             for state, run in six.iteritems(body):
+                log.debug("Checking if state is private(starts w/ '__')... salt/state.py")
                 if state.startswith("__"):
+                    log.debug("State is private... salt/state.py")
                     continue
+                log.debug("Iterating through arguments passed... salt/state.py")
                 for arg in run:
+                    log.debug("Checking if argument is of type dict{}... salt/state.py")
                     if isinstance(arg, dict):
+                        log.debug("Argument is not a function... verifying is a requisite... salt/state.py")
                         # It is not a function, verify that the arg is a
                         # requisite in statement
+                        log.debug("Checking if arg is an empty dict{}... salt/state.py")
                         if len(arg) < 1:
+                            log.debug("Argument is an empty dict{}... how'd we get here?... salt/state.py")
                             # Empty arg dict
                             # How did we get this far?
                             continue
                         # Split out the components
+                        log.debug("Splitting out argument components... salt/state.py")
                         key = next(iter(arg))
+                        log.debug("Confirming argument is not a requisite... salt/state.py")
                         if key not in req_in:
+                            log.debug("Argument is not a requisite_in argument... salt/state.py")
                             continue
+                        log.debug("Confirming requisite is not disabled... salt/state.py")
                         if key in disabled_reqs:
+                            log.debug("Disabled requisite detected... logging... salt/state.py")
                             log.warning(
                                 "The %s requisite has been disabled, Ignoring.", key
                             )
                             continue
+                        log.debug("Loading requisite keys... salt/state.py")
                         rkey = key.split("_")[0]
+                        log.debug("Loading arguments... salt/state.py")
                         items = arg[key]
+                        log.debug("Checking if argument is a dict... salt/state.py")
                         if isinstance(items, dict):
                             # Formatted as a single req_in
+                            log.debug("Parsing through single requisite_in arguments... salt/state.py")
                             for _state, name in six.iteritems(items):
 
                                 # Not a use requisite_in
                                 found = False
+                                log.debug("Checking if state `name` is in extend{} or not... salt/state.py")
                                 if name not in extend:
+                                    log.debug("State `name` not in extend{}... adding `name` as an OrderedDict() in extend{}... salt/state.py")
                                     extend[name] = OrderedDict()
+                                log.debug("Checking for `.` in state... salt/state.py")
                                 if "." in _state:
+                                    log.debug("`.` found in state... logging error for invalid requisite... salt/state.py")
                                     errors.append(
                                         "Invalid requisite in {0}: {1} for "
                                         "{2}, in SLS '{3}'. Requisites must "
@@ -1774,11 +1926,16 @@ class State(object):
                                             _state[: _state.find(".")],
                                         )
                                     )
+                                    log.debug("Splitting state at `.`... salt/state.py")
                                     _state = _state.split(".")[0]
+                                log.debug("Checking if state is not in extend{}... salt/state.py")
                                 if _state not in extend[name]:
+                                    log.debug("state not found in extend{}... adding... salt/state.py")
                                     extend[name][_state] = []
+                                log.debug("Loading in state env and sls files... salt/state.py")
                                 extend[name]["__env__"] = body["__env__"]
                                 extend[name]["__sls__"] = body["__sls__"]
+                                log.debug("Loading state id... salt/state.py")
                                 for ind in range(len(extend[name][_state])):
                                     if next(iter(extend[name][_state][ind])) == rkey:
                                         # Extending again
@@ -1788,12 +1945,16 @@ class State(object):
                                         found = True
                                 if found:
                                     continue
+                                log.debug("Generating rkey... salt/state.py")
                                 # The rkey is not present yet, create it
                                 extend[name][_state].append({rkey: [{state: id_}]})
 
+                        log.debug("Checking if items is a list of requisite additions... salt/state.py")
                         if isinstance(items, list):
                             # Formed as a list of requisite additions
                             hinges = []
+                            log.debug("Iterating through state names/ids... salt/state.py")
+                                # The rkey is not present yet, create it
                             for ind in items:
                                 if not isinstance(ind, dict):
                                     # Malformed req_in
@@ -1942,9 +2103,11 @@ class State(object):
                                         continue
                                     # The rkey is not present yet, create it
                                     extend[name][_state].append({rkey: [{state: id_}]})
+        log.debug("Loading in extend data in high data dict{}... salt/state.py")
         high["__extend__"] = []
         for key, val in six.iteritems(extend):
             high["__extend__"].append({key: val})
+        log.debug("Loadiing in requisite high data and requisite in errors into high data dict{}... salt/state.py")
         req_in_high, req_in_errors = self.reconcile_extend(high)
         errors.extend(req_in_errors)
         return req_in_high, errors
@@ -2445,8 +2608,11 @@ class State(object):
         """
         Iterate over a list of chunks and call them, checking for requires.
         """
+        log.debug("Beginning of call_chunks() execution.... salt/state.py")
+        log.debug("Iterating over list of chunks and calling them while checking for requisites... salt/state.py")
         # Check for any disabled states
         disabled = {}
+        log.debug("Checking for disabled states... salt/state.py")
         if "state_runs_disabled" in self.opts["grains"]:
             for low in chunks[:]:
                 state_ = "{0}.{1}".format(low["state"], low["fun"])
@@ -2468,6 +2634,7 @@ class State(object):
                         chunks.remove(low)
                         break
         running = {}
+        log.debug("Iterating through low data... salt/state.py")
         for low in chunks:
             if "__FAILHARD__" in running:
                 running.pop("__FAILHARD__")
@@ -2478,14 +2645,17 @@ class State(object):
                 action = self.check_pause(low)
                 if action == "kill":
                     break
+                log.debug("Executing low data... salt/state.py")
                 running = self.call_chunk(low, running, chunks)
                 if self.check_failhard(low, running):
                     return running
+            log.debug("Instantiating set{} to keep track of active processes... salt/state.py")
             self.active = set()
         while True:
             if self.reconcile_procs(running):
                 break
             time.sleep(0.01)
+        log.debug("Returning dictionary of disabled and currently running items... salt/state.py")
         ret = dict(list(disabled.items()) + list(running.items()))
         return ret
 
@@ -3088,6 +3258,8 @@ class State(object):
         """
         Find all of the listen routines and call the associated mod_watch runs
         """
+        log.debug("Beginning of call_listen() execution... salt/state.py")
+        log.debug("Listening for running state processes and returning running states... salt/state.py")
         listeners = []
         crefs = {}
         for chunk in chunks:
@@ -3186,27 +3358,44 @@ class State(object):
         """
         Process a high data call and ensure the defined states.
         """
+        log.debug("Beginning of call_high() execution... salt/state.py")
         errors = []
         # If there is extension data reconcile it
+        log.debug("Checking for extension data and reconciling it...")
         high, ext_errors = self.reconcile_extend(high)
+        log.debug("Updating errors to include possible extension errors... salt/state.py")
         errors.extend(ext_errors)
+        log.debug("Adding return of verify_high() function to errors... salt/state.py")
+        log.debug("Executing verify_high() to verify data is formatted properly... salt/state.py")
         errors.extend(self.verify_high(high))
+        log.debug("Checking if any errors occurred... salt/state.py")
         if errors:
+            log.debug("Unfortunately some errors occurred... returning them now... salt/state.py")
             return errors
+        log.debug("Loading in requisite data and requisite in errors into high{}... salt/state.py")
         high, req_in_errors = self.requisite_in(high)
+        log.debug("Loading in req_in errors... salt/state.py")
         errors.extend(req_in_errors)
+        log.debug("Removing exclusions from high data... salt/state.py")
         high = self.apply_exclude(high)
         # Verify that the high data is structurally sound
+        log.debug("Checking high data is structurally sound... salt/state.py")
         if errors:
+            log.debug("Errors in high data... returning them now... salt/state.py")
             return errors
         # Compile and verify the raw chunks
+        log.debug("Compiling and verifying raw chunks of high data... salt/state.py")
         chunks = self.compile_high_data(high, orchestration_jid)
 
         # If there are extensions in the highstate, process them and update
         # the low data chunks
+        log.debug("Checking for errors... salt/state.py")
         if errors:
+            log.debug("Errors found... returning them... salt/state.py")
             return errors
+        log.debug("Gathering return codes... salt/state.py")
         ret = self.call_chunks(chunks)
+        log.debug("Listening for running states... salt/state.py")
         ret = self.call_listen(chunks, ret)
 
         def _cleanup_accumulator_data():
@@ -3399,16 +3588,23 @@ class BaseHighState(object):
     """
 
     def __init__(self, opts):
+        log.debug("Initializing BaseHighState ABC... salt/state.py")
+        log.debug("Loading __opts__ dictionary... salt/state.py")
         self.opts = self.__gen_opts(opts)
+        log.debug("Establishing iorder... salt/state.py")
         self.iorder = 10000
+        log.debug("Loading available sls data from Master... salt/state.py")
         self.avail = self.__gather_avail()
+        log.debug("Instantiating Serialization class object to serialize opts dictionary... salt/state.py")
         self.serial = salt.payload.Serial(self.opts)
+        log.debug("Instantiating an ordered dictionary for highstate construction... salt/state.py")
         self.building_highstate = OrderedDict()
 
     def __gather_avail(self):
         """
         Lazily gather the lists of available sls data from the master
         """
+        log.debug("Lazily gathering available sls data from master... salt/state.py")
         return LazyAvailStates(self)
 
     def __gen_opts(self, opts):
@@ -3420,11 +3616,17 @@ class BaseHighState(object):
         # If the state is intended to be applied locally, then the local opts
         # should have all of the needed data, otherwise overwrite the local
         # data items with data from the master
+        log.debug("Beginning of __gen_opts() execution... salt/state.py")
+        log.debug("Check if state is meant to be applied locally... salt/state.py")
         if "local_state" in opts:
             if opts["local_state"]:
+                log.debug("State only being applied locally... using local opts data... salt/state.py")
                 return opts
+        log.debug("State not only being applied locally... overwriting the local data w/ data from master... salt/state.py")
         mopts = self.client.master_opts()
+        log.debug("Making sure mopts is a dictionary... otherwise the master had an error... salt/state.py")
         if not isinstance(mopts, dict):
+            log.debug("An error occurred on the master... salt/state.py")
             # An error happened on the master
             opts["renderer"] = "jinja|yaml"
             opts["failhard"] = False
@@ -3432,6 +3634,7 @@ class BaseHighState(object):
             opts["nodegroups"] = {}
             opts["file_roots"] = {"base": [syspaths.BASE_FILE_ROOTS_DIR]}
         else:
+            log.debug("Copying master opts data into local opts data... salt/state.py")
             opts["renderer"] = mopts["renderer"]
             opts["failhard"] = mopts.get("failhard", False)
             if mopts["state_top"].startswith("salt://"):
@@ -3459,6 +3662,7 @@ class BaseHighState(object):
             opts["jinja_sls_env"] = mopts.get("jinja_sls_env", {})
             opts["jinja_lstrip_blocks"] = mopts.get("jinja_lstrip_blocks", False)
             opts["jinja_trim_blocks"] = mopts.get("jinja_trim_blocks", False)
+        log.debug("Returning opts dictionary... salt/state.py")
         return opts
 
     def _get_envs(self):
@@ -3488,11 +3692,18 @@ class BaseHighState(object):
         """
         Gather the top files
         """
+        log.debug("Beginning of get_tops() execution... salt/state.py")
+        
+        log.debug("Instantiating a default ordered dict{} for top files... salt/state.py")
         tops = DefaultOrderedDict(list)
+        log.debug("Instantiating a default ordered dict{} for includes... salt/state.py")
         include = DefaultOrderedDict(list)
+        log.debug("Instantiating a defualt ordered dict{} for done... salt/state.py")
         done = DefaultOrderedDict(list)
         found = 0  # did we find any contents in the top files?
         # Gather initial top files
+        log.debug("Gathering initial top files... salt/state.py")
+        log.debug("Getting merging strategy in case of multiple top files... salt/state.py")
         merging_strategy = self.opts["top_file_merging_strategy"]
         if merging_strategy == "same" and not self.opts["saltenv"]:
             if not self.opts["default_top"]:
@@ -3501,6 +3712,7 @@ class BaseHighState(object):
                     "default_top configuration option was set"
                 )
 
+        log.debug("Loading saltenv... salt/state.py")
         if self.opts["saltenv"]:
             contents = self.client.cache_file(
                 self.opts["state_top"], self.opts["saltenv"]
@@ -3572,14 +3784,18 @@ class BaseHighState(object):
             )
 
         # Search initial top files for includes
+        log.debug("Searching initial top files for includes... salt/state.py")
         for saltenv, ctops in six.iteritems(tops):
             for ctop in ctops:
                 if "include" not in ctop:
+                    log.debug("No includes found... salt/state.py")
                     continue
                 for sls in ctop["include"]:
+                    log.debug("Includes found... appending... salt/state.py")
                     include[saltenv].append(sls)
                 ctop.pop("include")
         # Go through the includes and pull out the extra tops and add them
+        log.debug("Iterating through includes and appending extra top files... salt/state.py")
         while include:
             pops = []
             for saltenv, states in six.iteritems(include):
@@ -3604,14 +3820,19 @@ class BaseHighState(object):
             for saltenv in pops:
                 if saltenv in include:
                     include.pop(saltenv)
+        log.debug("Returning loaded top file(s)... salt/state.py")
         return tops
 
     def merge_tops(self, tops):
         """
         Cleanly merge the top files
         """
+        log.debug("Beginning of merge_tops() execution... salt/state.py")
+        log.debug("Merging top files... salt/state.py")
+        log.debug("Loading merging strategy... salt/state.py")
         merging_strategy = self.opts["top_file_merging_strategy"]
         try:
+            log.debug("Merging w/ specified strategy... salt/state.py")
             merge_attr = "_merge_tops_{0}".format(merging_strategy)
             merge_func = getattr(self, merge_attr)
             if not hasattr(merge_func, "__call__"):
@@ -3634,10 +3855,15 @@ class BaseHighState(object):
         environment from the top file will be considered, and it too will be
         ignored if that environment was defined in the "base" top file.
         """
+        log.debug("Beginning of _merge_tops_merge() execution... salt/state.py")
+        log.debug("Using default top file merging strategy... salt/state.py")
+        log.debug("Instantiating a Default OrderedDict{} for top file... salt/state.py")
         top = DefaultOrderedDict(OrderedDict)
 
         # Check base env first as it is authoritative
+        log.debug("Load base env... salt/state.py")
         base_tops = tops.pop("base", DefaultOrderedDict(OrderedDict))
+        log.debug("Loading in base env tgt's... salt/state.py")
         for ctop in base_tops:
             for saltenv, targets in six.iteritems(ctop):
                 if saltenv == "include":
@@ -3850,11 +4076,14 @@ class BaseHighState(object):
         """
         Returns the high data derived from the top file
         """
+        log.debug("Beginning of get_top() execution... salt/state.py")
         try:
+            log.debug("Attempting to retrieve high data from top file(s)... salt/state.py")
             tops = self.get_tops()
         except SaltRenderError as err:
             log.error("Unable to render top file: %s", err.error)
             return {}
+        log.debug("Merging top file(s)... salt/state.py")
         return self.merge_tops(tops)
 
     def top_matches(self, top):
@@ -3865,6 +4094,8 @@ class BaseHighState(object):
         Returns:
         {'saltenv': ['state1', 'state2', ...]}
         """
+        log.debug("Beginning of top_matches() execution... salt/state.py")
+        log.debug("top_matches() searches through top high data for matches and returns the states that this minion needs to execute... salt/state.py")
         matches = DefaultOrderedDict(OrderedDict)
         # pylint: disable=cell-var-from-loop
         for saltenv, body in six.iteritems(top):
@@ -3921,8 +4152,14 @@ class BaseHighState(object):
         If autoload_dynamic_modules is True then automatically load the
         dynamic modules
         """
+        log.debug("Beginning execution of load_dynamic()... salt/state.py")
+        log.debug("Check for autoload_dynamic_modules configuration... salt/state.py")
         if not self.opts["autoload_dynamic_modules"]:
+            log.debug("autoload_dynamic_modules set to False... end of load_dynamic() execution... salt/state.py")
             return
+        log.debug("autoload_dynamic_modules set to True... continuing... salt/state.py")
+        log.debug("Syncing all... salt/state.py")
+        # IN PROG
         syncd = self.state.functions["saltutil.sync_all"](list(matches), refresh=False)
         if syncd["grains"]:
             self.opts["grains"] = salt.loader.grains(self.opts)
@@ -4389,7 +4626,9 @@ class BaseHighState(object):
         """
         Run the sequence to execute the salt highstate for this minion
         """
+        log.debug("Beginning of call_highstate() execution... method of BaseHighState ABC... salt/state.py")  
         # Check that top file exists
+        log.debug("Checking that no top file exists... salt/state.py") 
         tag_name = "no_|-states_|-states_|-None"
         ret = {
             tag_name: {
@@ -4400,16 +4639,26 @@ class BaseHighState(object):
                 "__run_num__": 0,
             }
         }
+        log.debug("Loading configuration... salt/state.py")
         cfn = os.path.join(self.opts["cachedir"], "{0}.cache.p".format(cache_name))
 
+        log.debug("Checking for cache directory... salt/state.py")
         if cache:
+            log.debug("Cache directory exists... salt/state.py")
+            log.debug("Checking configuration file exists... salt/state.py")
             if os.path.isfile(cfn):
+                log.debug("Configuration detected... salt/state.py")
+                log.debug("Opening configuration file... salt/state.py")
                 with salt.utils.files.fopen(cfn, "rb") as fp_:
+                    log.debug("Loading high data... salt/state.py")
                     high = self.serial.load(fp_)
+                    log.debug("Returning call_high() function... salt/state.py")
                     return self.state.call_high(high, orchestration_jid)
         # File exists so continue
         err = []
+        log.debug("Top file is present... salt/state.py")
         try:
+            log.debug("Calling get_top()... salt/state.py")
             top = self.get_top()
         except SaltRenderError as err:
             ret[tag_name]["comment"] = "Unable to render top file: "
@@ -4429,6 +4678,7 @@ class BaseHighState(object):
             ret[tag_name]["comment"] = msg
             return ret
         matches = self.matches_whitelist(matches, whitelist)
+        # IN PROG
         self.load_dynamic(matches)
         if not self._check_pillar(force):
             err += ["Pillar failed to render with the following messages:"]
@@ -4556,7 +4806,9 @@ class HighState(BaseHighState):
     salt master or in the local cache.
     """
 
+    log.debug("Beginning of HighState object class execution... salt/state.py")
     # a stack of active HighState objects during a state.highstate run
+    log.debug("Initializing stack of active HighState objects... 4564 salt/state.py")
     stack = []
 
     def __init__(
@@ -4571,8 +4823,13 @@ class HighState(BaseHighState):
         loader="states",
         initial_pillar=None,
     ):
+        log.debug("Initializing HighState class object... salt/state.py")
+        log.debug("loading opts dictionary... salt/state.py")
+        log.debug("Instantiating self.opts dictionary member... salt/state.py")
         self.opts = opts
+        log.debug("Instantiating self.client member... salt/state.py")
         self.client = salt.fileclient.get_file_client(self.opts)
+        log.debug("Initializing BaseHighState parent class... salt/state.py")
         BaseHighState.__init__(self, opts)
         self.state = State(
             self.opts,
@@ -4595,6 +4852,7 @@ class HighState(BaseHighState):
         self._pydsl_render_stack = []
 
     def push_active(self):
+        log.debug("Execution of push_active()... salt/state.py")
         self.stack.append(self)
 
     @classmethod
@@ -4630,18 +4888,25 @@ class MasterState(State):
         """
         Load the modules into the state
         """
+        log.debug("Beginning of load_modules() execution... salt/state.py")
         log.info("Loading fresh modules for state activity")
         # Load a modified client interface that looks like the interface used
         # from the minion, but uses remote execution
         #
+        log.debug("Loading a modified client interface... salt/state.py")
         self.functions = salt.client.FunctionWrapper(self.opts, self.opts["id"])
         # Load the states, but they should not be used in this class apart
         # from inspection
+        log.debug("Loading states... salt/state.py")
+        log.debug("Calling salt.loader.utils... salt/state.py")
         self.utils = salt.loader.utils(self.opts)
+        log.debug("Calling salt.loader.serializers... salt/state.py")
         self.serializers = salt.loader.serializers(self.opts)
+        log.debug("Calling salt.loader.states... salt/state.py")
         self.states = salt.loader.states(
             self.opts, self.functions, self.utils, self.serializers
         )
+        log.debug("Calling salt.loader.render... salt/state.py")
         self.rend = salt.loader.render(
             self.opts, self.functions, states=self.states, context=self.state_con
         )
