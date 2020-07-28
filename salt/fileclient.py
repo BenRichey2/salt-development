@@ -400,6 +400,8 @@ class Client(object):
         Get a state file from the master and store it in the local minion
         cache; return the location of the file
         """
+        log.debug("Beginning of get_state() execution... salt/fileclient.py")
+        log.debug("Loading state file from master and storing it in local minion cache... salt/fileclient.py")
         if "." in sls:
             sls = sls.replace(".", "/")
         sls_url = salt.utils.url.create(sls + ".sls")

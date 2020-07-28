@@ -55,16 +55,20 @@ def compile_template(
         example: "mask_value="pass*". All "passwd", "password", "pass" will
         be masked (as text).
     """
+    log.debug("Beginning of compile_template() execution... salt/template.py")
+    log.debug("compile_template description: 'Take the path to a template and return the high data structure derived from the template... salt/template.py")
 
     # if any error occurs, we return an empty dictionary
     ret = {}
 
     log.debug("compile template: %s", template)
 
+    log.debug("Loading env... salt/template.py")
     if "env" in kwargs:
         # "env" is not supported; Use "saltenv".
         kwargs.pop("env")
 
+    log.debug("Loading template... salt/template.py")
     if template != ":string:":
         # Template was specified incorrectly
         if not isinstance(template, six.string_types):
@@ -88,6 +92,7 @@ def compile_template(
                 return ret
 
     # Get the list of render funcs in the render pipe line.
+    log.debug("Loading list of render functions in render pipe line... pillar/__init__.py")
     render_pipe = template_shebang(
         template, renderers, default, blacklist, whitelist, input_data
     )

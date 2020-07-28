@@ -581,8 +581,11 @@ class Pillar(object):
         """
         Gather the lists of available sls data from the master
         """
+        log.debug("Beginning of __gather_avail() execution... pillar/__init__.py")
         avail = {}
+        log.debug("Iterating through salt environments... pillar/__init__.py")
         for saltenv in self._get_envs():
+            log.debug("Gathering available sls data from master... pillar/__init__.py")
             avail[saltenv] = self.client.list_states(saltenv)
         return avail
 
@@ -633,8 +636,11 @@ class Pillar(object):
         """
         Pull the file server environments out of the master options
         """
+        log.debug("Beginning of _get_envs() execution... pillar/__init__.py")
         envs = set(["base"])
+        log.debug("Establishing environments and checking if pillar_roots option has been set... pillar/__init__.py")
         if "pillar_roots" in self.opts:
+            log.debug("pillar_roots option set... adding it to envs[] list... pillar/__init__.py")
             envs.update(list(self.opts["pillar_roots"]))
         return envs
 
@@ -835,12 +841,18 @@ class Pillar(object):
         """
         Collect a single pillar sls file and render it
         """
+        log.debug("Beginning of render_pstate() execution... pillar/__init__.py")
+        log.debug("Loading defaults... pillar/__init__.py")
         if defaults is None:
             defaults = {}
         err = ""
         errors = []
+        log.debug("Loading state data... pillar/__init__.py")
         state_data = self.client.get_state(sls, saltenv)
+        log.debug("Loading dest... pillar/__init__.py")
         fn_ = state_data.get("dest", False)
+        log.debug("Checking for errors... pillar/__init__.py")
+        log.debug("Rendering single pillar sls file... pillar/__init__.py")
         if not fn_:
             if sls in self.ignored_pillars.get(saltenv, []):
                 log.debug(
@@ -881,6 +893,7 @@ class Pillar(object):
                 return None, mods, errors
         state = None
         try:
+            log.debug("Compiling state template... pillar/__init__.py")
             state = compile_template(
                 fn_,
                 self.rend,
@@ -1006,15 +1019,20 @@ class Pillar(object):
         Extract the sls pillar files from the matches and render them into the
         pillar
         """
+        log.debug("Beginning of render_pillar() execution... pillar/__init__.py")
+        log.debug("Copying pillar_override data to pillar... pillar/__init__.py")
         pillar = copy.copy(self.pillar_override)
+        log.debug("If errors is null, making errors an empty list[]... pillar/__init__.py")
         if errors is None:
             errors = []
+        log.debug("Iterating through salt environments and pillar states in matching sls data... pillar/__init__.py")
         for saltenv, pstates in six.iteritems(matches):
             pstatefiles = []
             mods = set()
             for sls_match in pstates:
                 matched_pstates = []
                 try:
+                    log.debug("Gathering pillar states in matching sls data... pillar/__init__.py")
                     matched_pstates = fnmatch.filter(self.avail[saltenv], sls_match)
                 except KeyError:
                     errors.extend(
@@ -1024,13 +1042,18 @@ class Pillar(object):
                         ]
                     )
                 if matched_pstates:
+                    log.debug("Addinng matched pillar states to pillar state files list[]... pillar/__init__.py")
                     pstatefiles.extend(matched_pstates)
                 else:
+                    log.debug("No matching pillar states found... appending sls matches to pillar states files list[]... pillar/__init__.py")
                     pstatefiles.append(sls_match)
 
+            log.debug("Iterating through sls data in pillar state files list... pillar/__init__.py")
             for sls in pstatefiles:
+                log.debug("Rendering pillar sls data... pillar/__init__.py")
                 pstate, mods, err = self.render_pstate(sls, saltenv, mods)
 
+                log.debug("Loading errors... pillar/__init__.py")
                 if err:
                     errors += err
 
@@ -1045,6 +1068,7 @@ class Pillar(object):
                             ", ".join(["'{0}'".format(e) for e in errors]),
                         )
                         continue
+                    log.debug("Merging pillar and pillar sls data... pillar/__init__.py")
                     pillar = merge(
                         pillar,
                         pstate,
@@ -1098,6 +1122,8 @@ class Pillar(object):
         """
         Render the external pillar data
         """
+        log.debug("Beginning of ext_pillar() execution... pillar/__init__.py")
+        log.debug("Rendering external pillar data... pillar/__init__.py")
         if errors is None:
             errors = []
         try:
@@ -1199,17 +1225,23 @@ class Pillar(object):
                 log.debug("Calling top_matches... pillar/__init__.py")
                 matches = self.top_matches(top)
                 log.debug("Calling render_pillar()... pillar/__init__.py")
-                # IN PROG
                 pillar, errors = self.render_pillar(matches)
+                log.debug("Calling ext_pillar()... pillar/__init__.py")
                 pillar, errors = self.ext_pillar(pillar, errors=errors)
         else:
+            log.debug("Calling top_matches... pillar/__init__.py")
             matches = self.top_matches(top)
+            log.debug("Calling render_pillar... pillar/__init__.py")
             pillar, errors = self.render_pillar(matches)
         errors.extend(top_errors)
         if self.opts.get("pillar_opts", False):
+            log.debug("Loading master opts... pillar/__init__.py")
             mopts = dict(self.opts)
+            # GRAINS
             if "grains" in mopts:
+                log.debug("Loading grains from master opts... pillar/__init__.py")
                 mopts.pop("grains")
+            log.debug("Loading saltversion... pillar/__init__.py")
             mopts["saltversion"] = __version__
             pillar["master"] = mopts
         if "pillar" in self.opts and self.opts.get("ssh_merge_pillar", False):
@@ -1306,6 +1338,7 @@ class Pillar(object):
         """
         This method exist in order to be API compatible with RemotePillar
         """
+        log.debug("Beginning of destroy() execution w/in context of Pillar object class... pillar/__init__.py")
         if self._closing:
             return
         self._closing = True
@@ -1324,6 +1357,5 @@ class AsyncPillar(Pillar):
     def compile_pillar(self, ext=True):
         log.debug("Beginning of compile_pillar() execution in AsyncPillar object class... pillar/__init__.py")
         log.debug("Recursively calling compile_pillar w/in AsyncPillar object class... pillar/__init__.py")
-        # IN PROG
         ret = super(AsyncPillar, self).compile_pillar(ext=ext)
         raise salt.ext.tornado.gen.Return(ret)

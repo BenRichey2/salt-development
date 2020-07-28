@@ -4159,20 +4159,27 @@ class BaseHighState(object):
             return
         log.debug("autoload_dynamic_modules set to True... continuing... salt/state.py")
         log.debug("Syncing all... salt/state.py")
-        # IN PROG
         syncd = self.state.functions["saltutil.sync_all"](list(matches), refresh=False)
+        # GRAINS
+        log.debug("Checking if grains are present in syncd dict{}... salt/state.py")
         if syncd["grains"]:
+            log.debug("Grains are present... loading grains... salt/state.py")
             self.opts["grains"] = salt.loader.grains(self.opts)
+            log.debug("Grains are present... loading pillar... salt/state.py")
             self.state.opts["pillar"] = self.state._gather_pillar()
+        log.debug("Calling module_refresh()... salt/state.py")
         self.state.module_refresh()
 
     def render_state(self, sls, saltenv, mods, matches, local=False):
         """
         Render a state file and retrieve all of the include states
         """
+        log.debug("Beginnning of render_state() execution... salt/state.py")
         errors = []
         if not local:
+            log.debug("Loading state data... salt/state.py")
             state_data = self.client.get_state(sls, saltenv)
+            log.debug("Loading state_data dest... salt/state.py")
             fn_ = state_data.get("dest", False)
         else:
             fn_ = sls
@@ -4190,6 +4197,7 @@ class BaseHighState(object):
             )
         else:
             try:
+                log.debug("Loading state compile template... salt/state.py")
                 state = compile_template(
                     fn_,
                     self.state.rend,
@@ -4506,6 +4514,8 @@ class BaseHighState(object):
         Gather the state files and render them into a single unified salt
         high data structure.
         """
+        log.debug("Beginning of render_highstate() execution... salt/state.py")
+        log.debug("Callinng building_highstate()... salt/state.py")
         highstate = self.building_highstate
         all_errors = []
         mods = set()
@@ -4532,8 +4542,10 @@ class BaseHighState(object):
                     r_env = "{0}:{1}".format(saltenv, sls)
                     if r_env in mods:
                         continue
+                    log.debug("Rendering states... salt/state.py")
                     state, errors = self.render_state(sls, saltenv, mods, matches)
                     if state:
+                        log.debug("Merging included state... salt/state.py")
                         self.merge_included_states(highstate, state, errors)
                     for i, error in enumerate(errors[:]):
                         if "is not available" in error:
@@ -4678,13 +4690,15 @@ class BaseHighState(object):
             ret[tag_name]["comment"] = msg
             return ret
         matches = self.matches_whitelist(matches, whitelist)
-        # IN PROG
+        log.debug("Loading dynamic modules... salt/state.py")
         self.load_dynamic(matches)
         if not self._check_pillar(force):
             err += ["Pillar failed to render with the following messages:"]
             err += self.state.opts["pillar"]["_errors"]
         else:
+            log.debug("Rendering highstate against matching sls data... salt/state.py")
             high, errors = self.render_highstate(matches)
+            log.debug("Checking for excludes... salt/state.py")
             if exclude:
                 if isinstance(exclude, six.string_types):
                     exclude = exclude.split(",")

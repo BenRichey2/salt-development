@@ -782,6 +782,8 @@ def grains(opts, force_refresh=False, proxy=None):
         __grains__ = salt.loader.grains(__opts__)
         print __grains__['id']
     """
+    # THIS APPEARS TO BE THE BIG MAC-DADDY GRAIN-LOADING f(x)!! --BEN RICH
+
     # Need to re-import salt.config, somehow it got lost when a minion is starting
     import salt.config
 

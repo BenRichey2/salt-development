@@ -2448,7 +2448,6 @@ class Minion(MinionBase):
             )
             try:
                 log.debug("Running async_pillar.compile_pillar()... salt/minion.py")
-                # IN PROG
                 self.opts["pillar"] = yield async_pillar.compile_pillar()
             except SaltClientError:
                 # Do not exit if a pillar refresh fails.
@@ -2457,9 +2456,13 @@ class Minion(MinionBase):
                     "One or more masters may be down!"
                 )
             finally:
+                log.debug("Destroying AsyncPillar class obj... salt/minion.py")
                 async_pillar.destroy()
+        log.debug("Refreshing matchers... salt/minion.py")
         self.matchers_refresh()
+        log.debug("Refreshing beacons... salt/minion.py")
         self.beacons_refresh()
+        log.debug("Firing minion pillar refresh complete event... salt/minion.py")
         with salt.utils.event.get_event("minion", opts=self.opts, listen=False) as evt:
             evt.fire_event(
                 {"complete": True},
