@@ -4159,9 +4159,16 @@ class BaseHighState(object):
             return
         log.debug("autoload_dynamic_modules set to True... continuing... salt/state.py")
         log.debug("Syncing all... salt/state.py")
-        syncd = self.state.functions["saltutil.sync_all"](list(matches), refresh=False)
+# NOTE when sync_all() is applied before a `state.apply`, the grain data is properly refreshed
+# and the issue doesn't occur. Below, sync_all is called w/ refresh=False which causes the 
+# grain data to not be refreshed properly. However, when changing the line below to 
+# refresh=True, it fixes the Grain data inaccuracy during a `state.apply`...
+        #syncd = self.state.functions["saltutil.sync_all"](list(matches), refresh=False)
+        syncd = self.state.functions["saltutil.sync_all"](list(matches), refresh=True)
         # GRAINS
         log.debug("Checking if grains are present in syncd dict{}... salt/state.py")
+        log.debug("Printing syncd dict{} for convenience... salt/state.py")
+        log.debug(syncd)
         if syncd["grains"]:
             log.debug("Grains are present... loading grains... salt/state.py")
             self.opts["grains"] = salt.loader.grains(self.opts)

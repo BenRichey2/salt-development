@@ -49,6 +49,7 @@ except (ImportError, OSError, AttributeError, TypeError):
     pass
 
 
+log.debug("Instantiating empty dict{} of interfaces... utils/network.py")
 _INTERFACES = {}
 
 
@@ -57,8 +58,12 @@ def _get_interfaces():
     Provide a dict of the connected interfaces and their ip addresses
     """
 
+    log.debug("Beginning of _get_interfaces() execution... utils/network.py")
     global _INTERFACES
-    if not _INTERFACES or _INTERFACES:
+    if not _INTERFACES:
+        log.debug("Salt would've not refreshed the ip_interface data w/out my code change... utils/network.py")
+    if not _INTERFACES:
+        log.debug("Refreshing interface data... utils/network.py")
         _INTERFACES = interfaces()
     return _INTERFACES
 
@@ -896,6 +901,7 @@ def linux_interfaces():
     ip_path = salt.utils.path.which("ip")
     ifconfig_path = None if ip_path else salt.utils.path.which("ifconfig")
     if ip_path:
+        log.debug("IP COMMANDS RENDERED... utils/network.py")
         cmd1 = subprocess.Popen(
             "{0} link show".format(ip_path),
             shell=True,
@@ -915,7 +921,9 @@ def linux_interfaces():
                 salt.utils.stringutils.to_str(cmd1), salt.utils.stringutils.to_str(cmd2)
             )
         )
+        log.debug(ifaces)
     elif ifconfig_path:
+        log.debug("IFCONFIG COMMAND RENDERED... utils/network.py")
         cmd = subprocess.Popen(
             "{0} -a".format(ifconfig_path),
             shell=True,
@@ -923,6 +931,7 @@ def linux_interfaces():
             stderr=subprocess.STDOUT,
         ).communicate()[0]
         ifaces = _interfaces_ifconfig(salt.utils.stringutils.to_str(cmd))
+        log.debug(ifaces)
     return ifaces
 
 

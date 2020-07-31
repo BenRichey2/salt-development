@@ -783,6 +783,7 @@ def grains(opts, force_refresh=False, proxy=None):
         print __grains__['id']
     """
     # THIS APPEARS TO BE THE BIG MAC-DADDY GRAIN-LOADING f(x)!! --BEN RICH
+    log.debug("ATTENTION: this function returns functions for dynamic grains and values for static grains... salt/loader.py")
 
     # Need to re-import salt.config, somehow it got lost when a minion is starting
     import salt.config
